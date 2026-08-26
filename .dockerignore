@@ -10,6 +10,11 @@ web/frontend/dist
 
 extensions
 *.md
-.env
-.env.*
+
+# Must be recursive: a bare ".env" only matches the repo root, which would let
+# a developer's web/.env — containing the real API secret — into the image.
+**/.env
+**/.env.*
+!**/.env.example
+
 *.log
