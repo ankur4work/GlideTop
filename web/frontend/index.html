@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>GlideTop</title>
+
+    <script type="module">
+      if (!import.meta.env || !import.meta.env.PROD) {
+        // The base HTML is rendered server-side, so the HMR client has to be
+        // attached by hand for the Vite dev server to work.
+        const script = document.createElement('script');
+        script.setAttribute('type', 'module');
+        script.setAttribute('src', './dev_embed.js');
+        document.getElementsByTagName('head')[0].append(script);
+      }
+    </script>
+  </head>
+  <body>
+    <div id="app"><!--index.jsx injects App.jsx here--></div>
+    <script type="module" src="/index.jsx"></script>
+  </body>
+</html>

@@ -1,0 +1,49 @@
+# GlideTop — Shopify app configuration
+# https://shopify.dev/docs/apps/tools/cli/configuration
+#
+# REPLACE_ME_DOMAIN is still a placeholder — swap it for the real host once
+# Coolify assigns one, then re-run `shopify app deploy`.
+
+client_id = "1b4036bce75ff13b0929fd06e72b792a"
+name = "GlideTop"
+handle = "glidetop"
+application_url = "https://REPLACE_ME_DOMAIN"
+embedded = true
+
+[build]
+include_config_on_deploy = true
+
+[access_scopes]
+# GlideTop reads the shop's subscription state and writes one app-owned
+# metafield recording the tier. Neither needs an Admin API access scope, so this
+# stays empty — an app that requests nothing is the easiest kind to approve.
+scopes = ""
+
+[auth]
+redirect_urls = [
+  "https://REPLACE_ME_DOMAIN/api/auth",
+  "https://REPLACE_ME_DOMAIN/api/auth/callback"
+]
+
+[webhooks]
+api_version = "2024-10"
+
+  [[webhooks.subscriptions]]
+  topics = [ "customers/data_request" ]
+  uri = "/api/webhooks"
+
+  [[webhooks.subscriptions]]
+  topics = [ "customers/redact" ]
+  uri = "/api/webhooks"
+
+  [[webhooks.subscriptions]]
+  topics = [ "shop/redact" ]
+  uri = "/api/webhooks"
+
+[app_proxy]
+url = "https://REPLACE_ME_DOMAIN/api/glidetop"
+subpath = "glidetop"
+prefix = "apps"
+
+[pos]
+embedded = false

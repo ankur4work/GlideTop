@@ -1,0 +1,146 @@
+# Deploying GlideTop to Coolify
+
+Target: the self-hosted Coolify instance at `http://91.239.208.85:8000`.
+
+This is a **brand-new app**, not a migration — there are no existing merchants
+to protect, so plan names, database name and proxy path can be whatever we want.
+They are already set; don't change them after the first merchant subscribes.
+
+---
+
+## 0. Collect these first
+
+| Value | Where it comes from |
+|---|---|
+| `SHOPIFY_API_KEY` (client ID) | Partner Dashboard → GlideTop → **API credentials** |
+| `SHOPIFY_API_SECRET` | Same page. Treat as a secret — never commit it |
+| Extension UUID | Partner Dashboard → GlideTop → **Extensions** → GlideTop, after the first `shopify app deploy` |
+| A domain | e.g. `glidetop.yourdomain.com`, pointed at `91.239.208.85` |
+| MongoDB connection string | New MongoDB resource in Coolify, or Atlas free tier |
+
+---
+
+## 1. Push the repo
+
+```bash
+cd "C:/codershive/shopify apps/glidetop"
+git init
+git add -A
+git commit -m "GlideTop initial release"
+git branch -M main
+git remote add origin git@github.com:ankur4work/glidetop.git
+git push -u origin main
+```
+
+Then in Coolify: **New Resource → Application → connect this repo**.
+
+## 2. Build settings
+
+- Build pack: **Dockerfile** (at the repo root)
+- Exposed port: **8081**
+- Build arguments — these are baked into the frontend bundle and **must** be
+  build args, not just runtime variables:
+
+  | Argument | Value |
+  |---|---|
+  | `SHOPIFY_API_KEY` | your client ID |
+  | `GLIDETOP_EXTENSION_UUID` | from step 5, after the first extension deploy |
+  | `GLIDETOP_SUPPORT_EMAIL` | a monitored address |
+
+  On the very first deploy the extension UUID does not exist yet. Leave it
+  empty — "Open theme editor" still works, it just lands on the App embeds
+  panel without pre-selecting GlideTop. Set it and redeploy after step 5.
+
+> **Host memory note.** This server runs ~80 containers and sits close to its
+> memory ceiling. The Dockerfile pins the build heap to 1536 MB for that reason.
+> If a build dies with **exit code 255 and no error message**, that is the OOM
+> killer, not a code fault — retry when the host is quieter.
+
+## 3. MongoDB
+
+Coolify → **New Resource → Database → MongoDB**. Copy the connection string.
+
+## 4. Runtime environment variables
+
+Set on the application (see `web/.env.example` for the annotated list):
+
+```
+SHOPIFY_API_KEY=<client id>
+SHOPIFY_API_SECRET=<secret>
+HOST=https://glidetop.yourdomain.com
+PORT=8081
+NODE_ENV=production
+SCOPES=
+MONGODB_URI=<connection string>
+MONGODB_DB=glidetop
+BILLING_TEST=true
+```
+
+Coolify API quirks worth remembering: the env-var field is `is_buildtime` (not
+`is_build_time`, which 422s), and `is_literal: true` wraps values in single
+quotes that arrive as part of the value — pass `false` and keep `$` out of env
+values entirely.
+
+`BILLING_TEST=true` makes Shopify create **test** charges. Leave it on through
+App Store review, then set it to `false` and redeploy before launch.
+
+## 5. Deploy the app and the extension
+
+Point the domain at the Coolify app, deploy, and confirm:
+
+```bash
+curl https://glidetop.yourdomain.com/health
+# {"ok":true,"app":"GlideTop","billingTestMode":true}
+```
+
+`ok:false` means one of `SHOPIFY_API_KEY`, `SHOPIFY_API_SECRET`, `HOST` or
+`MONGODB_URI` is missing — that endpoint is the config-drift detector.
+
+Then push the theme app extension from your machine:
+
+```bash
+npm install
+npx shopify app deploy
+```
+
+Grab the extension UUID from the Partner Dashboard, add it as the
+`GLIDETOP_EXTENSION_UUID` build argument, and redeploy in Coolify.
+
+## 6. Partner Dashboard configuration
+
+| Field | Value |
+|---|---|
+| App URL | `https://glidetop.yourdomain.com` |
+| Allowed redirection URLs | `https://glidetop.yourdomain.com/api/auth`<br>`https://glidetop.yourdomain.com/api/auth/callback` |
+| App proxy — subpath prefix | `apps` |
+| App proxy — subpath | `glidetop` |
+| App proxy — URL | `https://glidetop.yourdomain.com/api/glidetop` |
+| GDPR webhooks | `https://glidetop.yourdomain.com/api/webhooks` |
+
+The app proxy is **required**. The storefront button resolves its plan through
+`/apps/glidetop/entitlement`, and the backend rejects any request to that path
+whose Shopify signature doesn't verify.
+
+Also update `shopify.app.toml` (replace `REPLACE_ME_CLIENT_ID` and
+`REPLACE_ME_DOMAIN`) so `shopify app deploy` doesn't overwrite the dashboard
+with placeholders.
+
+## 7. Verify before submitting
+
+1. Install on a development store. The admin UI loads embedded, no console errors.
+2. `/health` returns `ok:true`.
+3. Theme editor → App embeds → GlideTop toggles on; the button appears in the preview.
+4. Storefront: scroll past 200 px, the button glides in; click it, the page returns to top.
+5. Network tab: exactly **one** call to `/apps/glidetop/entitlement` per session,
+   not one per page.
+6. Hit `/apps/glidetop/entitlement` directly with no `signature` query parameter
+   — it must return **401**.
+7. Subscribe to Basic on the dev store (a test charge), confirm the Plans page
+   shows *Current* on Basic and that colour settings now apply on the storefront.
+8. Cancel; confirm you drop back to Free and the button reverts to indigo.
+
+## 8. Before going live
+
+- `BILLING_TEST=false`, then redeploy.
+- Confirm `GLIDETOP_SUPPORT_EMAIL` reaches a real inbox.
+- Publish a privacy policy URL — Shopify will not approve the listing without one.

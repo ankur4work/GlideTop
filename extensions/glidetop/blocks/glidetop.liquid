@@ -1,0 +1,595 @@
+{%- comment -%}
+  GlideTop — floating back-to-top control.
+
+  Architecture note: every merchant-configurable value is rendered onto the root
+  element as a data-* attribute and read once by the script. Nothing from
+  block.settings is interpolated into a JavaScript string literal, so a stray
+  quote in a setting can never break the script or inject markup.
+
+  Entitlement (free / basic / premium) is resolved through the signed app proxy
+  and cached in sessionStorage, so a shopper browsing 20 pages costs one request
+  rather than twenty.
+{%- endcomment -%}
+
+{%- liquid
+  assign is_home = false
+  assign is_product = false
+  assign is_collection = false
+  assign is_content = false
+
+  if template.name == 'index'
+    assign is_home = true
+  elsif template.name == 'product'
+    assign is_product = true
+  elsif template.name == 'collection' or template.name == 'list-collections'
+    assign is_collection = true
+  elsif template.name == 'page' or template.name == 'blog' or template.name == 'article'
+    assign is_content = true
+  endif
+-%}
+
+<style>
+  #glidetop-root {
+    --gt-size: {{ block.settings.button_size }}px;
+    --gt-bg: {{ block.settings.bgcolor }};
+    --gt-bg-hover: {{ block.settings.hovercolor }};
+    --gt-icon: {{ block.settings.iconcolor }};
+    --gt-ring: {{ block.settings.ringcolor }};
+    --gt-radius: {% if block.settings.shape == 'square' %}14px{% elsif block.settings.shape == 'squircle' %}30%{% else %}50%{% endif %};
+    --gt-offset-x: {{ block.settings.offset_x }}px;
+    --gt-offset-y: {{ block.settings.offset_y }}px;
+
+    position: fixed;
+    z-index: 2147483000;
+    bottom: var(--gt-offset-y);
+    {% if block.settings.position == 'left' %}left{% else %}right{% endif %}: var(--gt-offset-x);
+    display: none;
+    line-height: 0;
+  }
+
+  #glidetop-root[data-gt-enabled='true'] { display: block; }
+
+  .glidetop-btn {
+    position: relative;
+    width: var(--gt-size);
+    height: var(--gt-size);
+    padding: 0;
+    margin: 0;
+    border: none;
+    border-radius: var(--gt-radius);
+    background-color: var(--gt-bg);
+    color: var(--gt-icon);
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+    box-shadow: 0 10px 24px -6px rgba(15, 23, 42, 0.35), 0 2px 6px rgba(15, 23, 42, 0.18);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(16px) scale(0.9);
+    transition: opacity 0.28s ease, transform 0.28s cubic-bezier(0.34, 1.4, 0.64, 1),
+      visibility 0.28s ease, background-color 0.2s ease;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  #glidetop-root[data-gt-visible='true'] .glidetop-btn {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0) scale(1);
+  }
+
+  .glidetop-btn:hover { background-color: var(--gt-bg-hover); }
+
+  .glidetop-btn:focus-visible {
+    outline: 3px solid var(--gt-ring);
+    outline-offset: 3px;
+  }
+
+  .glidetop-btn:active { transform: translateY(0) scale(0.94); }
+
+  /* Scroll-progress ring. Rendered only when the shop is entitled to it. */
+  .glidetop-progress {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    transform: rotate(-90deg);
+    pointer-events: none;
+  }
+
+  .glidetop-progress circle {
+    fill: none;
+    stroke-width: 2.5;
+    stroke-linecap: round;
+  }
+
+  .glidetop-progress .glidetop-progress-track { stroke: var(--gt-ring); opacity: 0.25; }
+
+  .glidetop-progress .glidetop-progress-bar {
+    stroke: var(--gt-ring);
+    stroke-dasharray: var(--gt-circumference, 289);
+    stroke-dashoffset: var(--gt-dashoffset, 289);
+    transition: stroke-dashoffset 0.1s linear;
+  }
+
+  .glidetop-icon {
+    display: grid;
+    place-items: center;
+    width: 55%;
+    height: 55%;
+  }
+
+  .glidetop-icon svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .glidetop-icon svg.glidetop-icon--filled {
+    fill: currentColor;
+    stroke: none;
+  }
+
+  /* Merchants who enable the label get a pill instead of a circle. */
+  #glidetop-root[data-gt-label='true'] .glidetop-btn {
+    width: auto;
+    height: auto;
+    border-radius: 999px;
+    padding: 10px 18px 10px 14px;
+    grid-auto-flow: column;
+    gap: 8px;
+    align-items: center;
+  }
+
+  #glidetop-root[data-gt-label='true'] .glidetop-icon {
+    width: 18px;
+    height: 18px;
+  }
+
+  #glidetop-root[data-gt-label='true'] .glidetop-progress { display: none; }
+
+  .glidetop-label {
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1;
+    letter-spacing: 0.01em;
+    font-family: inherit;
+    white-space: nowrap;
+  }
+
+  @media (max-width: 749px) {
+    #glidetop-root[data-gt-hide-mobile='true'] { display: none !important; }
+    #glidetop-root { --gt-size: calc({{ block.settings.button_size }}px * 0.88); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .glidetop-btn { transition: opacity 0.2s ease, visibility 0.2s ease, background-color 0.2s ease; transform: none; }
+    #glidetop-root[data-gt-visible='true'] .glidetop-btn { transform: none; }
+    .glidetop-progress .glidetop-progress-bar { transition: none; }
+  }
+</style>
+
+<div
+  id="glidetop-root"
+  data-gt-proxy="{{ shop.url }}"
+  data-gt-shop="{{ shop.permanent_domain }}"
+  data-gt-threshold="{{ block.settings.scroll_threshold }}"
+  data-gt-smooth="{{ block.settings.smooth_scroll }}"
+  data-gt-progress="{{ block.settings.show_progress }}"
+  data-gt-label="false"
+  data-gt-label-text="{{ block.settings.label_text }}"
+  data-gt-label-enabled="{{ block.settings.show_label }}"
+  data-gt-hide-mobile="{{ block.settings.hide_on_mobile }}"
+  data-gt-allow-home="{{ block.settings.show_on_home_page }}"
+  data-gt-allow-product="{{ block.settings.show_on_product_page }}"
+  data-gt-allow-collection="{{ block.settings.show_on_collection_page }}"
+  data-gt-allow-content="{{ block.settings.show_on_pages }}"
+  data-gt-is-home="{{ is_home }}"
+  data-gt-is-product="{{ is_product }}"
+  data-gt-is-collection="{{ is_collection }}"
+  data-gt-is-content="{{ is_content }}"
+  data-gt-default-bg="#4F46E5"
+  data-gt-default-hover="#3730A3"
+  data-gt-default-icon="#FFFFFF"
+>
+  <button type="button" class="glidetop-btn" aria-label="{{ block.settings.aria_label | default: 'Back to top' }}">
+    {%- if block.settings.show_progress -%}
+      <svg class="glidetop-progress" viewBox="0 0 100 100" aria-hidden="true" focusable="false">
+        <circle class="glidetop-progress-track" cx="50" cy="50" r="46"></circle>
+        <circle class="glidetop-progress-bar" cx="50" cy="50" r="46"></circle>
+      </svg>
+    {%- endif -%}
+
+    <span class="glidetop-icon" aria-hidden="true">
+      {%- case block.settings.icon_style -%}
+        {%- when 'chevron' -%}
+          <svg viewBox="0 0 24 24"><polyline points="6 15 12 9 18 15"></polyline></svg>
+        {%- when 'arrow' -%}
+          <svg viewBox="0 0 24 24"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg>
+        {%- when 'double_chevron' -%}
+          <svg viewBox="0 0 24 24"><polyline points="6 17 12 11 18 17"></polyline><polyline points="6 11 12 5 18 11"></polyline></svg>
+        {%- when 'chevron_line' -%}
+          <svg viewBox="0 0 24 24"><line x1="5" y1="5" x2="19" y2="5"></line><polyline points="6 17 12 11 18 17"></polyline></svg>
+        {%- when 'triangle' -%}
+          <svg viewBox="0 0 24 24" class="glidetop-icon--filled"><path d="M12 6 20 17H4Z"></path></svg>
+        {%- when 'rocket' -%}
+          <svg viewBox="0 0 24 24"><path d="M12 2c3 2.4 4.5 5.6 4.5 9v4.5h-9V11c0-3.4 1.5-6.6 4.5-9Z"></path><path d="M7.5 15.5 5 18l2 1 1 2 2.5-2.5"></path><path d="M16.5 15.5 19 18l-2 1-1 2-2.5-2.5"></path><circle cx="12" cy="10" r="1.6"></circle></svg>
+        {%- else -%}
+          <svg viewBox="0 0 24 24"><polyline points="6 15 12 9 18 15"></polyline></svg>
+      {%- endcase -%}
+    </span>
+
+    {%- if block.settings.show_label -%}
+      <span class="glidetop-label">{{ block.settings.label_text | default: 'Top' }}</span>
+    {%- endif -%}
+  </button>
+</div>
+
+<script>
+  (function () {
+    'use strict';
+
+    var root = document.getElementById('glidetop-root');
+    if (!root) return;
+
+    var btn = root.querySelector('.glidetop-btn');
+    var progressBar = root.querySelector('.glidetop-progress-bar');
+    var CACHE_KEY = 'glidetop:plan';
+    var CACHE_TTL = 10 * 60 * 1000; // 10 minutes
+
+    var truthy = function (value) { return value === 'true'; };
+
+    /* ---------------- Entitlement ---------------- */
+
+    // sessionStorage may throw in private-browsing or sandboxed iframes; never
+    // let a storage failure stop the button from rendering.
+    function readCache() {
+      try {
+        var raw = window.sessionStorage.getItem(CACHE_KEY);
+        if (!raw) return null;
+        var parsed = JSON.parse(raw);
+        if (!parsed || typeof parsed.tier !== 'string') return null;
+        if (Date.now() - parsed.at > CACHE_TTL) return null;
+        return parsed.tier;
+      } catch (e) {
+        return null;
+      }
+    }
+
+    function writeCache(tier) {
+      try {
+        window.sessionStorage.setItem(CACHE_KEY, JSON.stringify({ tier: tier, at: Date.now() }));
+      } catch (e) {
+        /* storage unavailable — the fetch simply repeats next page */
+      }
+    }
+
+    function fetchTier() {
+      var cached = readCache();
+      if (cached) return Promise.resolve(cached);
+
+      // The proxy path is signed by Shopify; the backend rejects unsigned calls.
+      return fetch('/apps/glidetop/entitlement', {
+        method: 'GET',
+        headers: { Accept: 'application/json' },
+        credentials: 'same-origin'
+      })
+        .then(function (res) { return res.ok ? res.json() : null; })
+        .then(function (data) {
+          var tier = data && typeof data.tier === 'string' ? data.tier : 'free';
+          writeCache(tier);
+          return tier;
+        })
+        .catch(function () { return 'free'; });
+    }
+
+    /* ---------------- Plan capability matrix ---------------- */
+
+    // free    — homepage only, fixed GlideTop styling, no progress ring
+    // basic   — every styling control, homepage only
+    // premium — every styling control, every page type, progress ring
+    function capabilities(tier) {
+      if (tier === 'premium') {
+        return { styling: true, allPages: true, progress: true, label: true };
+      }
+      if (tier === 'basic') {
+        return { styling: true, allPages: false, progress: false, label: true };
+      }
+      return { styling: false, allPages: false, progress: false, label: false };
+    }
+
+    function allowedOnThisPage(caps) {
+      var onHome = truthy(root.dataset.gtIsHome);
+
+      // Free and Basic are homepage-only regardless of the merchant's toggles.
+      if (!caps.allPages) {
+        return onHome && (caps.styling ? truthy(root.dataset.gtAllowHome) : true);
+      }
+
+      if (onHome) return truthy(root.dataset.gtAllowHome);
+      if (truthy(root.dataset.gtIsProduct)) return truthy(root.dataset.gtAllowProduct);
+      if (truthy(root.dataset.gtIsCollection)) return truthy(root.dataset.gtAllowCollection);
+      if (truthy(root.dataset.gtIsContent)) return truthy(root.dataset.gtAllowContent);
+
+      // Search, cart, 404 and custom templates follow the "other pages" toggle.
+      return truthy(root.dataset.gtAllowContent);
+    }
+
+    /* ---------------- Rendering ---------------- */
+
+    function applyPlan(tier) {
+      var caps = capabilities(tier);
+
+      if (!allowedOnThisPage(caps)) return;
+
+      if (!caps.styling) {
+        // Free tier renders GlideTop's own palette, ignoring merchant settings.
+        root.style.setProperty('--gt-bg', root.dataset.gtDefaultBg);
+        root.style.setProperty('--gt-bg-hover', root.dataset.gtDefaultHover);
+        root.style.setProperty('--gt-icon', root.dataset.gtDefaultIcon);
+        root.style.setProperty('--gt-radius', '50%');
+      }
+
+      if (caps.label && truthy(root.dataset.gtLabelEnabled)) {
+        root.dataset.gtLabel = 'true';
+      }
+
+      var wantsProgress = caps.progress && truthy(root.dataset.gtProgress) && progressBar;
+      if (!wantsProgress && progressBar) {
+        progressBar.parentNode.style.display = 'none';
+      }
+
+      root.dataset.gtEnabled = 'true';
+      bindScroll(wantsProgress);
+    }
+
+    /* ---------------- Scroll behaviour ---------------- */
+
+    function bindScroll(withProgress) {
+      var threshold = parseInt(root.dataset.gtThreshold, 10);
+      if (isNaN(threshold) || threshold < 0) threshold = 200;
+
+      var circumference = 2 * Math.PI * 46;
+      if (withProgress) {
+        root.style.setProperty('--gt-circumference', circumference);
+      }
+
+      var ticking = false;
+
+      function update() {
+        ticking = false;
+
+        var scrolled = window.pageYOffset || document.documentElement.scrollTop || 0;
+        root.dataset.gtVisible = scrolled > threshold ? 'true' : 'false';
+
+        if (!withProgress) return;
+
+        var docHeight = Math.max(
+          document.body.scrollHeight,
+          document.documentElement.scrollHeight,
+          document.body.offsetHeight,
+          document.documentElement.offsetHeight
+        );
+        var scrollable = docHeight - window.innerHeight;
+        var ratio = scrollable > 0 ? Math.min(1, Math.max(0, scrolled / scrollable)) : 0;
+        root.style.setProperty('--gt-dashoffset', circumference * (1 - ratio));
+      }
+
+      function onScroll() {
+        if (ticking) return;
+        ticking = true;
+        window.requestAnimationFrame(update);
+      }
+
+      window.addEventListener('scroll', onScroll, { passive: true });
+      window.addEventListener('resize', onScroll, { passive: true });
+      update();
+    }
+
+    /* ---------------- Click ---------------- */
+
+    var prefersReducedMotion =
+      window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    btn.addEventListener('click', function () {
+      var smooth = truthy(root.dataset.gtSmooth) && !prefersReducedMotion;
+
+      try {
+        window.scrollTo({ top: 0, behavior: smooth ? 'smooth' : 'auto' });
+      } catch (e) {
+        // Older Safari rejects the options object form.
+        window.scrollTo(0, 0);
+      }
+
+      // Return keyboard focus to the top of the document, not just the viewport.
+      var target = document.querySelector('main, #MainContent, [role="main"]') || document.body;
+      if (target && typeof target.focus === 'function') {
+        target.setAttribute('tabindex', '-1');
+        target.focus({ preventScroll: true });
+      }
+    });
+
+    /* ---------------- Boot ---------------- */
+
+    function boot() {
+      fetchTier().then(applyPlan);
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', boot);
+    } else {
+      boot();
+    }
+  })();
+</script>
+
+{% schema %}
+{
+  "name": "GlideTop",
+  "target": "body",
+  "settings": [
+    {
+      "type": "header",
+      "content": "Plan features",
+      "info": "Free shows a fixed GlideTop button on your home page. Basic unlocks every styling control. Premium adds page-level visibility and the scroll-progress ring."
+    },
+
+    {
+      "type": "header",
+      "content": "Appearance"
+    },
+    {
+      "type": "select",
+      "id": "icon_style",
+      "label": "Icon",
+      "options": [
+        { "value": "chevron", "label": "Chevron" },
+        { "value": "arrow", "label": "Arrow" },
+        { "value": "double_chevron", "label": "Double chevron" },
+        { "value": "chevron_line", "label": "Chevron with bar" },
+        { "value": "triangle", "label": "Triangle" },
+        { "value": "rocket", "label": "Rocket" }
+      ],
+      "default": "chevron"
+    },
+    {
+      "type": "select",
+      "id": "shape",
+      "label": "Shape",
+      "options": [
+        { "value": "circle", "label": "Circle" },
+        { "value": "squircle", "label": "Squircle" },
+        { "value": "square", "label": "Rounded square" }
+      ],
+      "default": "circle"
+    },
+    {
+      "type": "range",
+      "id": "button_size",
+      "label": "Button size",
+      "min": 36,
+      "max": 72,
+      "step": 2,
+      "unit": "px",
+      "default": 52
+    },
+    { "type": "color", "id": "bgcolor", "label": "Background", "default": "#4F46E5" },
+    { "type": "color", "id": "hovercolor", "label": "Background on hover", "default": "#3730A3" },
+    { "type": "color", "id": "iconcolor", "label": "Icon", "default": "#FFFFFF" },
+    { "type": "color", "id": "ringcolor", "label": "Progress ring and focus outline", "default": "#06B6D4" },
+
+    {
+      "type": "header",
+      "content": "Label"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_label",
+      "label": "Show a text label beside the icon",
+      "info": "Turns the circle into a pill. Hides the progress ring.",
+      "default": false
+    },
+    {
+      "type": "text",
+      "id": "label_text",
+      "label": "Label text",
+      "default": "Top"
+    },
+
+    {
+      "type": "header",
+      "content": "Position"
+    },
+    {
+      "type": "select",
+      "id": "position",
+      "label": "Corner",
+      "options": [
+        { "value": "right", "label": "Bottom right" },
+        { "value": "left", "label": "Bottom left" }
+      ],
+      "default": "right"
+    },
+    {
+      "type": "range",
+      "id": "offset_x",
+      "label": "Distance from side",
+      "min": 8,
+      "max": 60,
+      "step": 2,
+      "unit": "px",
+      "default": 20
+    },
+    {
+      "type": "range",
+      "id": "offset_y",
+      "label": "Distance from bottom",
+      "min": 8,
+      "max": 120,
+      "step": 2,
+      "unit": "px",
+      "default": 20,
+      "info": "Increase this if the button overlaps a sticky bar or chat widget."
+    },
+
+    {
+      "type": "header",
+      "content": "Behaviour"
+    },
+    {
+      "type": "range",
+      "id": "scroll_threshold",
+      "label": "Appear after scrolling",
+      "min": 50,
+      "max": 1200,
+      "step": 50,
+      "unit": "px",
+      "default": 200
+    },
+    {
+      "type": "checkbox",
+      "id": "smooth_scroll",
+      "label": "Animate the scroll back to top",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_progress",
+      "label": "Show scroll-progress ring",
+      "info": "Premium plan.",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "hide_on_mobile",
+      "label": "Hide on mobile",
+      "default": false
+    },
+
+    {
+      "type": "header",
+      "content": "Visibility",
+      "info": "Page-level visibility requires the Premium plan. Free and Basic show the button on the home page only."
+    },
+    { "type": "checkbox", "id": "show_on_home_page", "label": "Home page", "default": true },
+    { "type": "checkbox", "id": "show_on_product_page", "label": "Product pages", "default": true },
+    { "type": "checkbox", "id": "show_on_collection_page", "label": "Collection pages", "default": true },
+    { "type": "checkbox", "id": "show_on_pages", "label": "Pages, blogs and everything else", "default": true },
+
+    {
+      "type": "header",
+      "content": "Accessibility"
+    },
+    {
+      "type": "text",
+      "id": "aria_label",
+      "label": "Screen-reader label",
+      "default": "Back to top"
+    }
+  ]
+}
+{% endschema %}

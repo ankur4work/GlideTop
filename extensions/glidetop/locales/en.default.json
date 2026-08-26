@@ -1,0 +1,8 @@
+{
+  "glidetop": {
+    "button": {
+      "aria_label": "Back to top",
+      "default_label": "Top"
+    }
+  }
+}

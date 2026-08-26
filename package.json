@@ -1,0 +1,21 @@
+{
+  "name": "glidetop",
+  "version": "1.0.0",
+  "description": "GlideTop — a floating back-to-top control for Shopify storefronts.",
+  "main": "web/index.js",
+  "license": "UNLICENSED",
+  "private": true,
+  "scripts": {
+    "shopify": "shopify",
+    "build": "shopify app build",
+    "dev": "shopify app dev",
+    "info": "shopify app info",
+    "generate": "shopify app generate",
+    "deploy": "shopify app deploy"
+  },
+  "dependencies": {
+    "@shopify/app": "^3.58.2",
+    "@shopify/cli": "^3.84.1",
+    "dotenv": "^8.2.0"
+  }
+}

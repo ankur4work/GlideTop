@@ -1,0 +1,15 @@
+node_modules
+web/node_modules
+web/frontend/node_modules
+web/frontend/dist
+
+.git
+.github
+.deploy
+.vscode
+
+extensions
+*.md
+.env
+.env.*
+*.log

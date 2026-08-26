@@ -1,0 +1,794 @@
+/* =========================================================================
+   GlideTop admin design system
+   Indigo / cyan on slate. Everything here is prefixed `gt-` so it can never
+   collide with Polaris internals.
+   ========================================================================= */
+
+:root {
+  --gt-indigo: #4f46e5;
+  --gt-indigo-dark: #3730a3;
+  --gt-indigo-soft: #eef2ff;
+  --gt-indigo-border: #c7d2fe;
+
+  --gt-cyan: #06b6d4;
+  --gt-cyan-dark: #0e7490;
+  --gt-cyan-soft: #ecfeff;
+
+  --gt-ink: #0f172a;
+  --gt-body: #334155;
+  --gt-muted: #64748b;
+  --gt-line: #e2e8f0;
+  --gt-surface: #ffffff;
+  --gt-canvas: #f8fafc;
+
+  --gt-success: #059669;
+  --gt-success-soft: #ecfdf5;
+  --gt-warn: #d97706;
+  --gt-warn-soft: #fffbeb;
+
+  --gt-radius: 14px;
+  --gt-radius-lg: 18px;
+  --gt-shadow: 0 1px 2px rgba(15, 23, 42, 0.06), 0 8px 24px -12px rgba(15, 23, 42, 0.18);
+  --gt-shadow-lift: 0 18px 40px -18px rgba(79, 70, 229, 0.45);
+}
+
+/* ------------------------------- Primitives ------------------------------ */
+
+.gt-section {
+  background: var(--gt-surface);
+  border: 1px solid var(--gt-line);
+  border-radius: var(--gt-radius-lg);
+  box-shadow: var(--gt-shadow);
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+
+.gt-section__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 22px 14px;
+  border-bottom: 1px solid var(--gt-line);
+}
+
+.gt-section__body {
+  padding: 20px 22px 22px;
+}
+
+.gt-section__title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 650;
+  color: var(--gt-ink);
+  letter-spacing: -0.01em;
+}
+
+.gt-section__sub {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: var(--gt-muted);
+  line-height: 1.5;
+}
+
+/* Thin gradient rule used as a brand signature above section titles. */
+.gt-rule {
+  height: 3px;
+  width: 46px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--gt-indigo) 0%, var(--gt-cyan) 100%);
+  margin-bottom: 10px;
+}
+
+/* --------------------------------- Hero ---------------------------------- */
+
+.gt-hero {
+  position: relative;
+  border-radius: var(--gt-radius-lg);
+  padding: 26px 28px;
+  margin-bottom: 20px;
+  color: #f8fafc;
+  background: linear-gradient(120deg, #312e81 0%, var(--gt-indigo) 52%, var(--gt-cyan) 130%);
+  box-shadow: var(--gt-shadow-lift);
+  overflow: hidden;
+}
+
+/* Decorative concentric arcs, echoing the button's progress ring. */
+.gt-hero::after {
+  content: "";
+  position: absolute;
+  top: -70px;
+  right: -60px;
+  width: 260px;
+  height: 260px;
+  border-radius: 50%;
+  border: 28px solid rgba(255, 255, 255, 0.08);
+  pointer-events: none;
+}
+
+.gt-hero__inner {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.gt-hero__eyebrow {
+  margin: 0 0 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(224, 231, 255, 0.85);
+}
+
+.gt-hero__title {
+  margin: 0;
+  font-size: 24px;
+  line-height: 1.2;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.gt-hero__text {
+  margin: 8px 0 0;
+  max-width: 52ch;
+  font-size: 14px;
+  line-height: 1.6;
+  color: rgba(226, 232, 240, 0.92);
+}
+
+.gt-hero__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+/* --------------------------------- Pills --------------------------------- */
+
+.gt-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 999px;
+  padding: 4px 11px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+
+.gt-pill--live {
+  background: var(--gt-success-soft);
+  color: #065f46;
+  border: 1px solid #a7f3d0;
+}
+
+.gt-pill--idle {
+  background: var(--gt-warn-soft);
+  color: #92400e;
+  border: 1px solid #fde68a;
+}
+
+.gt-pill--plan {
+  background: var(--gt-indigo-soft);
+  color: var(--gt-indigo-dark);
+  border: 1px solid var(--gt-indigo-border);
+}
+
+.gt-pill--onHero {
+  background: rgba(255, 255, 255, 0.16);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  backdrop-filter: blur(4px);
+}
+
+.gt-pill__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+  flex: none;
+}
+
+/* ------------------------------- Checklist ------------------------------- */
+
+.gt-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+}
+
+.gt-step {
+  display: grid;
+  grid-template-columns: 30px 1fr auto;
+  align-items: start;
+  gap: 14px;
+  padding: 14px 16px;
+  border: 1px solid var(--gt-line);
+  border-radius: var(--gt-radius);
+  background: var(--gt-canvas);
+  transition: border-color 0.16s ease, background 0.16s ease;
+}
+
+.gt-step--done {
+  background: var(--gt-success-soft);
+  border-color: #a7f3d0;
+}
+
+.gt-step--active {
+  background: var(--gt-indigo-soft);
+  border-color: var(--gt-indigo-border);
+}
+
+.gt-step__marker {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+  font-weight: 700;
+  background: #ffffff;
+  border: 1px solid var(--gt-line);
+  color: var(--gt-muted);
+}
+
+.gt-step--done .gt-step__marker {
+  background: var(--gt-success);
+  border-color: var(--gt-success);
+  color: #ffffff;
+}
+
+.gt-step--active .gt-step__marker {
+  background: var(--gt-indigo);
+  border-color: var(--gt-indigo);
+  color: #ffffff;
+}
+
+.gt-step__title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 620;
+  color: var(--gt-ink);
+}
+
+.gt-step__text {
+  margin: 3px 0 0;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--gt-muted);
+}
+
+/* ------------------------------ Feature grid ----------------------------- */
+
+.gt-grid {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.gt-tile {
+  border: 1px solid var(--gt-line);
+  border-radius: var(--gt-radius);
+  padding: 16px;
+  background: var(--gt-surface);
+  transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
+}
+
+.gt-tile:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--gt-shadow);
+  border-color: var(--gt-indigo-border);
+}
+
+.gt-tile__icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 10px;
+  background: linear-gradient(135deg, var(--gt-indigo-soft), var(--gt-cyan-soft));
+  color: var(--gt-indigo);
+}
+
+.gt-tile__icon svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.gt-tile__title {
+  margin: 0 0 4px;
+  font-size: 14px;
+  font-weight: 620;
+  color: var(--gt-ink);
+}
+
+.gt-tile__text {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--gt-muted);
+}
+
+/* ------------------------- Interactive button preview -------------------- */
+
+.gt-preview {
+  display: grid;
+  grid-template-columns: minmax(240px, 1fr) minmax(240px, 320px);
+  gap: 22px;
+  align-items: start;
+}
+
+@media (max-width: 880px) {
+  .gt-preview {
+    grid-template-columns: 1fr;
+  }
+}
+
+.gt-preview__controls {
+  display: grid;
+  gap: 16px;
+}
+
+.gt-field__label {
+  display: block;
+  font-size: 12px;
+  font-weight: 650;
+  color: var(--gt-body);
+  margin-bottom: 7px;
+}
+
+.gt-swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.gt-swatch {
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  border: 2px solid transparent;
+  box-shadow: 0 0 0 1px var(--gt-line);
+  cursor: pointer;
+  padding: 0;
+  transition: transform 0.14s ease, box-shadow 0.14s ease;
+}
+
+.gt-swatch:hover {
+  transform: scale(1.08);
+}
+
+.gt-swatch[aria-pressed="true"] {
+  box-shadow: 0 0 0 2px var(--gt-surface), 0 0 0 4px var(--gt-indigo);
+}
+
+.gt-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.gt-chip {
+  border: 1px solid var(--gt-line);
+  background: var(--gt-surface);
+  border-radius: 999px;
+  padding: 6px 13px;
+  font-size: 12.5px;
+  font-weight: 550;
+  color: var(--gt-body);
+  cursor: pointer;
+  transition: all 0.14s ease;
+}
+
+.gt-chip:hover {
+  border-color: var(--gt-indigo-border);
+  background: var(--gt-indigo-soft);
+}
+
+.gt-chip[aria-pressed="true"] {
+  background: var(--gt-indigo);
+  border-color: var(--gt-indigo);
+  color: #ffffff;
+}
+
+/* The fake storefront viewport the sample button lives in. */
+.gt-stage {
+  position: relative;
+  height: 320px;
+  border-radius: var(--gt-radius);
+  border: 1px solid var(--gt-line);
+  background: var(--gt-canvas);
+  overflow: hidden;
+}
+
+.gt-stage__bar {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 12px;
+  background: var(--gt-surface);
+  border-bottom: 1px solid var(--gt-line);
+}
+
+.gt-stage__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--gt-line);
+}
+
+.gt-stage__scroll {
+  height: 100%;
+  overflow-y: auto;
+  scroll-behavior: smooth;
+}
+
+.gt-stage__content {
+  padding: 14px;
+  display: grid;
+  gap: 12px;
+}
+
+.gt-skeleton {
+  border-radius: 8px;
+  background: linear-gradient(90deg, #e2e8f0 0%, #eef2f7 50%, #e2e8f0 100%);
+}
+
+.gt-skeleton--title { height: 15px; width: 58%; }
+.gt-skeleton--line { height: 9px; }
+.gt-skeleton--line.is-short { width: 72%; }
+.gt-skeleton--card { height: 88px; }
+
+/* The sample button itself — mirrors the storefront markup. */
+.gt-sample {
+  position: absolute;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  border: none;
+  cursor: pointer;
+  color: #ffffff;
+  box-shadow: 0 10px 22px -8px rgba(15, 23, 42, 0.5);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(14px) scale(0.9);
+  transition: opacity 0.26s ease, transform 0.26s cubic-bezier(0.34, 1.4, 0.64, 1),
+    visibility 0.26s ease, background-color 0.2s ease, border-radius 0.2s ease;
+}
+
+.gt-sample.is-visible {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0) scale(1);
+}
+
+.gt-sample svg {
+  width: 55%;
+  height: 55%;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.gt-sample svg.is-filled {
+  fill: currentColor;
+  stroke: none;
+}
+
+.gt-sample__ring {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+  pointer-events: none;
+}
+
+.gt-sample__ring circle {
+  fill: none;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+}
+
+.gt-hint {
+  margin: 9px 0 0;
+  font-size: 12px;
+  color: var(--gt-muted);
+  text-align: center;
+}
+
+/* ------------------------------- Plan cards ------------------------------ */
+
+.gt-plans {
+  display: grid;
+  gap: 18px;
+  grid-template-columns: repeat(auto-fit, minmax(258px, 1fr));
+  align-items: start;
+}
+
+.gt-plan {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  background: var(--gt-surface);
+  border: 1px solid var(--gt-line);
+  border-radius: var(--gt-radius-lg);
+  overflow: hidden;
+  box-shadow: var(--gt-shadow);
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+}
+
+.gt-plan:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 20px 44px -20px rgba(15, 23, 42, 0.32);
+}
+
+.gt-plan--current {
+  border-color: var(--gt-indigo);
+  box-shadow: 0 0 0 1px var(--gt-indigo), var(--gt-shadow-lift);
+}
+
+.gt-plan__accent {
+  height: 5px;
+  width: 100%;
+}
+
+.gt-plan__body {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  gap: 12px;
+}
+
+.gt-plan__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.gt-plan__name {
+  font-size: 15px;
+  font-weight: 680;
+  color: var(--gt-ink);
+  letter-spacing: -0.01em;
+}
+
+.gt-plan__price {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.gt-plan__amount {
+  font-size: 34px;
+  font-weight: 720;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  color: var(--gt-ink);
+}
+
+.gt-plan__period {
+  font-size: 13px;
+  color: var(--gt-muted);
+  font-weight: 500;
+}
+
+.gt-plan__pitch {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--gt-muted);
+  min-height: 42px;
+}
+
+.gt-plan__features {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 9px;
+  flex: 1;
+}
+
+.gt-plan__feature {
+  display: grid;
+  grid-template-columns: 17px 1fr;
+  gap: 9px;
+  align-items: start;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--gt-body);
+}
+
+.gt-plan__feature.is-off {
+  color: #94a3b8;
+}
+
+.gt-plan__feature svg {
+  width: 15px;
+  height: 15px;
+  margin-top: 2px;
+  fill: none;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.gt-plan__feature.is-on svg { stroke: var(--gt-success); }
+.gt-plan__feature.is-off svg { stroke: #cbd5e1; }
+
+.gt-plan__cta {
+  margin-top: 14px;
+}
+
+.gt-ribbon {
+  position: absolute;
+  top: 14px;
+  right: -30px;
+  transform: rotate(38deg);
+  background: var(--gt-cyan);
+  color: #06283d;
+  font-size: 10.5px;
+  font-weight: 750;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 4px 34px;
+  box-shadow: 0 3px 8px rgba(15, 23, 42, 0.2);
+}
+
+/* ------------------------------ Compare table ---------------------------- */
+
+.gt-compare-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.gt-compare {
+  width: 100%;
+  min-width: 520px;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.gt-compare th,
+.gt-compare td {
+  padding: 11px 14px;
+  border-bottom: 1px solid var(--gt-line);
+  text-align: left;
+  color: var(--gt-body);
+}
+
+.gt-compare thead th {
+  font-size: 12px;
+  font-weight: 680;
+  color: var(--gt-ink);
+  background: var(--gt-canvas);
+  white-space: nowrap;
+}
+
+.gt-compare thead th:not(:first-child),
+.gt-compare tbody td:not(:first-child) {
+  text-align: center;
+  width: 108px;
+}
+
+.gt-compare tbody tr:last-child th,
+.gt-compare tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.gt-compare tbody th {
+  font-weight: 550;
+  color: var(--gt-body);
+}
+
+.gt-compare .is-on { color: var(--gt-success); font-weight: 700; }
+.gt-compare .is-off { color: #cbd5e1; font-weight: 700; }
+
+/* --------------------------------- FAQ ----------------------------------- */
+
+.gt-faq {
+  display: grid;
+  gap: 10px;
+}
+
+.gt-faq__item {
+  border: 1px solid var(--gt-line);
+  border-radius: var(--gt-radius);
+  overflow: hidden;
+  background: var(--gt-surface);
+}
+
+.gt-faq__q {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 14px 16px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  font-size: 13.5px;
+  font-weight: 620;
+  color: var(--gt-ink);
+}
+
+.gt-faq__q:hover { background: var(--gt-canvas); }
+
+.gt-faq__q svg {
+  width: 15px;
+  height: 15px;
+  flex: none;
+  fill: none;
+  stroke: var(--gt-muted);
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: transform 0.18s ease;
+}
+
+.gt-faq__q[aria-expanded="true"] svg { transform: rotate(180deg); }
+
+.gt-faq__a {
+  padding: 0 16px 15px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--gt-muted);
+}
+
+.gt-faq__a p { margin: 0 0 8px; }
+.gt-faq__a p:last-child { margin-bottom: 0; }
+
+/* ------------------------------- Utilities ------------------------------- */
+
+.gt-stack { display: grid; gap: 10px; }
+.gt-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.gt-spacer { height: 8px; }
+
+.gt-note {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 12px 14px;
+  border-radius: var(--gt-radius);
+  background: var(--gt-cyan-soft);
+  border: 1px solid #a5f3fc;
+  font-size: 13px;
+  line-height: 1.55;
+  color: #0e5b6b;
+}
+
+.gt-code {
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 12.5px;
+  background: var(--gt-canvas);
+  border: 1px solid var(--gt-line);
+  border-radius: 6px;
+  padding: 1px 6px;
+  color: var(--gt-indigo-dark);
+}
+
+/* Polaris page padding is tight for our wide sections. */
+.Polaris-Page { padding-bottom: 32px; }
