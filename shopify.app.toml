@@ -1,13 +1,13 @@
 # GlideTop — Shopify app configuration
 # https://shopify.dev/docs/apps/tools/cli/configuration
 #
-# REPLACE_ME_DOMAIN is still a placeholder — swap it for the real host once
-# Coolify assigns one, then re-run `shopify app deploy`.
+# `shopify app deploy` pushes this file's URLs to the Partner Dashboard, so it
+# is the source of truth for them — edit here, not in the dashboard UI.
 
 client_id = "1b4036bce75ff13b0929fd06e72b792a"
 name = "GlideTop"
 handle = "glidetop"
-application_url = "https://REPLACE_ME_DOMAIN"
+application_url = "https://glidetop.onkra.online"
 embedded = true
 
 [build]
@@ -21,8 +21,8 @@ scopes = ""
 
 [auth]
 redirect_urls = [
-  "https://REPLACE_ME_DOMAIN/api/auth",
-  "https://REPLACE_ME_DOMAIN/api/auth/callback"
+  "https://glidetop.onkra.online/api/auth",
+  "https://glidetop.onkra.online/api/auth/callback"
 ]
 
 [webhooks]
@@ -41,7 +41,7 @@ api_version = "2024-10"
   uri = "/api/webhooks"
 
 [app_proxy]
-url = "https://REPLACE_ME_DOMAIN/api/glidetop"
+url = "https://glidetop.onkra.online/api/glidetop"
 subpath = "glidetop"
 prefix = "apps"
 

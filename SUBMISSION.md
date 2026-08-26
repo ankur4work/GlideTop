@@ -6,27 +6,31 @@ Work top to bottom. Everything above the line is blocking.
 
 ## 1. Things only you can do
 
-- [ ] Create the app in the Partner Dashboard, named **GlideTop**
-      (confirm the name isn't taken before committing to it)
-- [ ] Create the GitHub repo and push this project
-- [ ] Copy `SHOPIFY_API_KEY` (client ID) and `SHOPIFY_API_SECRET`
-- [ ] Point a domain at the Coolify host `91.239.208.85`
-- [ ] Provision MongoDB
+- [x] Create the app in the Partner Dashboard, named **GlideTop**
+- [x] Create the GitHub repo and push this project — <https://github.com/ankur4work/GlideTop>
+- [x] Copy `SHOPIFY_API_KEY` (client ID) and `SHOPIFY_API_SECRET`
+- [x] Choose a domain — `glidetop.onkra.online`
+- [ ] **Create the DNS A record:** `glidetop` → `91.239.208.85`
+      (as of 2026-08-26 the name does not resolve)
+- [ ] **Generate a working Coolify API token.** The one supplied 401s on every
+      endpoint; Coolify issues Laravel Sanctum tokens shaped `<id>|<hash>`
+- [ ] Provision MongoDB (Coolify → New Resource → Database → MongoDB)
 - [ ] Publish a **privacy policy** at a public URL — Shopify will not approve a
       listing without one
 - [ ] Set up a monitored **support email**
 
-## 2. Replace the placeholders
+## 2. Configuration state
 
-Three literal placeholders ship in the repo. Search for `REPLACE_ME`:
+`shopify.app.toml` is fully populated — client ID and all four
+`glidetop.onkra.online` URLs. No placeholders remain in the repo.
 
-| File | Placeholder | Replace with |
+Still to set as a **build argument** in Coolify:
+
+| Variable | Why it must be a build arg | Consequence if unset |
 |---|---|---|
-| `shopify.app.toml` | `REPLACE_ME_CLIENT_ID` | your client ID |
-| `shopify.app.toml` | `REPLACE_ME_DOMAIN` (×4) | your domain |
-
-Then set `GLIDETOP_SUPPORT_EMAIL` as a build argument in Coolify — otherwise the
-Support page falls back to `support@glidetop.app`, which is not yours.
+| `SHOPIFY_API_KEY` | Baked into the frontend bundle | Admin UI shows "Missing Shopify API Key" and nothing else |
+| `GLIDETOP_SUPPORT_EMAIL` | Same | Support page falls back to `support@glidetop.app`, which is not yours |
+| `GLIDETOP_EXTENSION_UUID` | Same | "Open theme editor" lands on App embeds without pre-selecting GlideTop |
 
 ## 3. Deploy
 

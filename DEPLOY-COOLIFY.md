@@ -1,6 +1,7 @@
 # Deploying GlideTop to Coolify
 
 Target: the self-hosted Coolify instance at `http://91.239.208.85:8000`.
+Domain: **https://glidetop.onkra.online**
 
 This is a **brand-new app**, not a migration — there are no existing merchants
 to protect, so plan names, database name and proxy path can be whatever we want.
@@ -10,29 +11,24 @@ They are already set; don't change them after the first merchant subscribes.
 
 ## 0. Collect these first
 
-| Value | Where it comes from |
-|---|---|
-| `SHOPIFY_API_KEY` (client ID) | Partner Dashboard → GlideTop → **API credentials** |
-| `SHOPIFY_API_SECRET` | Same page. Treat as a secret — never commit it |
-| Extension UUID | Partner Dashboard → GlideTop → **Extensions** → GlideTop, after the first `shopify app deploy` |
-| A domain | e.g. `glidetop.yourdomain.com`, pointed at `91.239.208.85` |
-| MongoDB connection string | New MongoDB resource in Coolify, or Atlas free tier |
+| Value | Where it comes from | Status |
+|---|---|---|
+| `SHOPIFY_API_KEY` (client ID) | Partner Dashboard → GlideTop → **API credentials** | ✅ `1b4036bc…` |
+| `SHOPIFY_API_SECRET` | Same page. Treat as a secret — never commit it | ✅ in `.deploy/coolify.env` |
+| Coolify API token | Coolify → **Keys & Tokens** → API tokens. Shaped `<id>\|<hash>` | ⛔ pending |
+| DNS A record | `glidetop` → `91.239.208.85` | ⛔ pending |
+| Extension UUID | Partner Dashboard → GlideTop → **Extensions**, after the first `shopify app deploy` | ⛔ pending |
+| MongoDB connection string | New MongoDB resource in Coolify (step 3) | ⛔ pending |
 
 ---
 
-## 1. Push the repo
+## 1. The repo
 
-```bash
-cd "C:/codershive/shopify apps/glidetop"
-git init
-git add -A
-git commit -m "GlideTop initial release"
-git branch -M main
-git remote add origin git@github.com:ankur4work/glidetop.git
-git push -u origin main
-```
+Already pushed to <https://github.com/ankur4work/GlideTop> (public, branch
+`main`). In Coolify: **New Resource → Application → Public Repository**, and
+point it at that URL.
 
-Then in Coolify: **New Resource → Application → connect this repo**.
+Because the repo is public, Coolify needs no deploy key or GitHub App.
 
 ## 2. Build settings
 
@@ -43,7 +39,7 @@ Then in Coolify: **New Resource → Application → connect this repo**.
 
   | Argument | Value |
   |---|---|
-  | `SHOPIFY_API_KEY` | your client ID |
+  | `SHOPIFY_API_KEY` | `1b4036bce75ff13b0929fd06e72b792a` |
   | `GLIDETOP_EXTENSION_UUID` | from step 5, after the first extension deploy |
   | `GLIDETOP_SUPPORT_EMAIL` | a monitored address |
 
@@ -60,14 +56,18 @@ Then in Coolify: **New Resource → Application → connect this repo**.
 
 Coolify → **New Resource → Database → MongoDB**. Copy the connection string.
 
+Note this adds another container to an already memory-starved host. If the
+database or the build starts getting killed, move to MongoDB Atlas' free tier
+and change only `MONGODB_URI` — nothing else in the app cares where Mongo lives.
+
 ## 4. Runtime environment variables
 
 Set on the application (see `web/.env.example` for the annotated list):
 
 ```
-SHOPIFY_API_KEY=<client id>
+SHOPIFY_API_KEY=1b4036bce75ff13b0929fd06e72b792a
 SHOPIFY_API_SECRET=<secret>
-HOST=https://glidetop.yourdomain.com
+HOST=https://glidetop.onkra.online
 PORT=8081
 NODE_ENV=production
 SCOPES=
@@ -86,10 +86,11 @@ App Store review, then set it to `false` and redeploy before launch.
 
 ## 5. Deploy the app and the extension
 
-Point the domain at the Coolify app, deploy, and confirm:
+Point `glidetop.onkra.online` at the Coolify app so it can issue the TLS
+certificate, deploy, then confirm:
 
 ```bash
-curl https://glidetop.yourdomain.com/health
+curl https://glidetop.onkra.online/health
 # {"ok":true,"app":"GlideTop","billingTestMode":true}
 ```
 
@@ -108,22 +109,22 @@ Grab the extension UUID from the Partner Dashboard, add it as the
 
 ## 6. Partner Dashboard configuration
 
+`shopify.app.toml` already carries every one of these values, and
+`shopify app deploy` pushes them to the dashboard — so this table is for
+verification, not manual data entry.
+
 | Field | Value |
 |---|---|
-| App URL | `https://glidetop.yourdomain.com` |
-| Allowed redirection URLs | `https://glidetop.yourdomain.com/api/auth`<br>`https://glidetop.yourdomain.com/api/auth/callback` |
+| App URL | `https://glidetop.onkra.online` |
+| Allowed redirection URLs | `https://glidetop.onkra.online/api/auth`<br>`https://glidetop.onkra.online/api/auth/callback` |
 | App proxy — subpath prefix | `apps` |
 | App proxy — subpath | `glidetop` |
-| App proxy — URL | `https://glidetop.yourdomain.com/api/glidetop` |
-| GDPR webhooks | `https://glidetop.yourdomain.com/api/webhooks` |
+| App proxy — URL | `https://glidetop.onkra.online/api/glidetop` |
+| GDPR webhooks | `https://glidetop.onkra.online/api/webhooks` |
 
 The app proxy is **required**. The storefront button resolves its plan through
 `/apps/glidetop/entitlement`, and the backend rejects any request to that path
 whose Shopify signature doesn't verify.
-
-Also update `shopify.app.toml` (replace `REPLACE_ME_CLIENT_ID` and
-`REPLACE_ME_DOMAIN`) so `shopify app deploy` doesn't overwrite the dashboard
-with placeholders.
 
 ## 7. Verify before submitting
 
