@@ -2,9 +2,12 @@ import { Button, Page } from "@shopify/polaris";
 
 import { FaqList, Section } from "../components";
 
-// Set GLIDETOP_SUPPORT_EMAIL at build time. Shopify requires a monitored
-// support address before an app can be listed, so this must not stay generic.
-const SUPPORT_EMAIL = process.env.GLIDETOP_SUPPORT_EMAIL || "support@glidetop.app";
+// Set GLIDETOP_SUPPORT_EMAIL at build time to override. The fallback is a real
+// monitored mailbox on purpose: Shopify requires a working support address to
+// list the app, and a placeholder on a domain we don't own would silently ship
+// a dead address if the build argument were ever missing.
+const SUPPORT_EMAIL =
+  process.env.GLIDETOP_SUPPORT_EMAIL || "ankur4worksabai@gmail.com";
 
 const FAQ_ITEMS = [
   {
