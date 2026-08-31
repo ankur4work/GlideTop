@@ -3,6 +3,15 @@
 Target: the self-hosted Coolify instance at `http://91.239.208.85:8000`.
 Domain: **https://glidetop.onkra.online**
 
+> **Deployed and verified 2026-08-26.** The backend is live: `/health` returns
+> `{"ok":true,...}`, unsigned app-proxy calls return 401, and both the
+> application and MongoDB report `running:healthy`. The build was not
+> OOM-killed, and installing `curl` in the runtime image did prevent the
+> health-check rollback trap. Resource IDs live in `.deploy/coolify.env`.
+>
+> Still outstanding: the theme app extension has never been deployed (step 5),
+> so no storefront has the button yet.
+
 This is a **brand-new app**, not a migration — there are no existing merchants
 to protect, so plan names, database name and proxy path can be whatever we want.
 They are already set; don't change them after the first merchant subscribes.
@@ -76,10 +85,22 @@ MONGODB_DB=glidetop
 BILLING_TEST=true
 ```
 
-Coolify API quirks worth remembering: the env-var field is `is_buildtime` (not
-`is_build_time`, which 422s), and `is_literal: true` wraps values in single
-quotes that arrive as part of the value — pass `false` and keep `$` out of env
-values entirely.
+### Coolify API quirks (all hit during the first deploy, 2026-08-26)
+
+- The env-var request field is **`is_buildtime`** (not `is_build_time`, which
+  422s). Responses expose both `is_buildtime` and `is_runtime` — read the former
+  back, or every variable will look like it isn't a build arg.
+- `is_literal: true` wraps values in single quotes that arrive as part of the
+  value. Pass `false`, and keep `$` out of env values entirely.
+- `POST /api/v1/applications/{uuid}/envs` created **two identical records per
+  key**. Harmless but confusing; de-duplicate by UUID afterwards, keeping one
+  record per key.
+- **`/api/v1/deploy` is POST**, not GET. A GET returns 405 with
+  `{"message":"This endpoint has changed to a POST request."}`.
+- A freshly created MongoDB briefly reports `exited:unhealthy` while it boots.
+  Poll again before concluding anything failed.
+- Generate database passwords as **alphanumeric only** — it sidesteps both the
+  `$` quirk above and percent-encoding in the MongoDB connection URI.
 
 `BILLING_TEST=true` makes Shopify create **test** charges. Leave it on through
 App Store review, then set it to `false` and redeploy before launch.
